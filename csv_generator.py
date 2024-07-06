@@ -1,74 +1,37 @@
-import csv
+import math
 
-# Function to read the existing CSV file and return the lines as a list
-def read_csv(file_path):
-    try:
-        with open(file_path, mode='r', newline='') as file:
-            reader = csv.reader(file)
-            next(reader, None)  # Skip the header
-            return [row for row in reader]
-    except FileNotFoundError:
-        # If the file doesn't exist, return an empty list
-        return []
 
-# Function to write the updated lines back to the CSV file
-def write_csv(file_path, lines):
-    with open(file_path, mode='w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(["ID_STEP", "DIRECTION"])  # Write the header
-        writer.writerows(lines)
+def calculate_distances_and_yaws(points):
+    if len(points) < 4:
+        raise ValueError("The list must contain at least 5 points.")
 
-# Function to update the CSV with the new lines from the server
-def update_csv(file_path, new_lines):
-    # Read the existing lines from the CSV
-    existing_lines = read_csv(file_path)
+    results = []
+    for i in range(0, len(points) - 4, 4):
+        point1 = points[i]
+        point5 = points[i + 4]
 
-    # Combine existing lines with new lines
-    combined_lines = existing_lines + new_lines
+        # Calculate the distance between the points
+        dx = point5[0] - point1[0]
+        dy = point5[1] - point1[1]
+        distance = math.sqrt(dx ** 2 + dy ** 2)
 
-    # Keep only the last 29 lines
-    updated_lines = combined_lines[-4:]
+        # Calculate the yaw (angle in radians)
+        yaw = math.degrees(math.atan2(dy, dx))
+        results.append((distance, yaw))
 
-    # Write the updated lines back to the CSV
-    write_csv(file_path, updated_lines)
+    final_results = []
+    distance = 0
+    current_yaw = results[0][1]
+    for i in range(1, len(results) - 1):
+        current_range = abs(current_yaw - results[i][1])
+        if current_range > 30 and current_range <= 330 and not distance == 0:
+            final_results.append((int(distance) * 1.9, (int((current_yaw-45) % 360))))
+            current_yaw = results[i][1]
+            distance = 0
+        else:
+            distance += results[i][0]
+        if i == len(results) - 2:
+            final_results.append((int(distance) * 1.9, (int(((results[i][1])) % 360))))
 
-# Example usage
-file_path = 'coordinatesClient.csv'
-
-# First iteration: Simulating receiving 30 new lines from the server
-new_lines_from_server_1 = [
-    [0, 'right'],
-    [1, 'right'],
-    [2, 'right'],
-    [3, 'right'],
-    [4, 'right']
-
-]
-
-# Update the CSV file with the new lines, keeping only the last 29
-update_csv(file_path, new_lines_from_server_1[1:])  # Save from 2 to 30
-
-# Read and print the updated CSV to verify the result
-updated_csv = read_csv(file_path)
-print("Updated CSV content:")
-for row in updated_csv:
-    print(row)
-
-# Second iteration: Simulating receiving another 30 new lines from the server
-new_lines_from_server_2 = [
-    [1, 'right'],
-    [2, 'right'],
-    [3, 'right'],
-    [4, 'right'],
-    [5, 'right']
-
-]
-
-# Update the CSV file with the new lines, keeping only the last 29
-update_csv(file_path, new_lines_from_server_2[1:])  # Save from 3 to 31
-
-# Read and print the updated CSV to verify the result
-updated_csv = read_csv(file_path)
-print("Updated CSV content:")
-for row in updated_csv:
-    print(row)
+    filtered_data = [item for item in final_results if item[0] >= 10]
+    return filtered_data

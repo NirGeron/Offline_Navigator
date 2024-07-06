@@ -145,7 +145,7 @@ def save_path_with_direction_changes(path, filename="gps.csv"):
             writer.writerow([y, x])
 
 
-def save_followed_directions(path, filename="offline.csv"):
+def save_followed_directions(path, filename="files/offline.csv"):
     """Saves a count and the direction of the same directions to a CSV file.
 
     Args:

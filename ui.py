@@ -1,6 +1,8 @@
 import time
 import pygame
 import csv
+
+import csv_generator
 import read_map
 from PIL import Image
 
@@ -13,8 +15,8 @@ car_speed = 0  # Initial speed
 max_speed = 1  # Maximum speed
 acceleration = 0.01  # Acceleration rate
 deceleration = 0.04  # Deceleration rate
-yaw_speed = 5  # Speed of yaw change
-range_yaw = 60
+yaw_speed = 3  # Speed of yaw change
+range_yaw = 30
 
 # Colors
 WHITE = (255, 255, 255)
@@ -43,9 +45,30 @@ def read_csv(file_path):
         reader = csv.reader(file)
         next(reader)  # Skip header if there is one
         for row in reader:
-            x, y, yaw = map(float, row)
-            points.append((x, y, yaw))
+            x, y = map(float, row)
+            points.append((x, y))
     return points
+
+def is_yaw_in_range(yaw, target_yaw, range_degrees=30):
+    # Normalize yaw and target_yaw to range [0, 360)
+    yaw = yaw % 360
+    target_yaw = target_yaw % 360
+
+    # Calculate the lower and upper bounds of the range
+    lower_bound = (target_yaw - range_degrees) % 360
+    upper_bound = (target_yaw + range_degrees) % 360
+
+    # Adjust bounds for negative values
+    if lower_bound < 0:
+        lower_bound += 360
+    if upper_bound < 0:
+        upper_bound += 360
+
+    # Check if yaw is within the cyclic range
+    if lower_bound <= upper_bound:
+        return lower_bound <= yaw <= upper_bound
+    else:
+        return yaw >= lower_bound or yaw <= upper_bound
 
 
 # Function to draw text on the screen
@@ -63,7 +86,6 @@ def draw_road(position, lines):
 
 
 def show_bubble_error(message, window):
-    RED = (255, 0, 0)
     BLACK = (0, 0, 0)
     error_width = 400
     error_height = 200
@@ -71,9 +93,9 @@ def show_bubble_error(message, window):
     error_y = map_height // 2
 
     pygame.draw.rect(window, WHITE, (error_x, error_y, error_width, error_height), border_radius=20)
-    pygame.draw.rect(window, RED, (error_x, error_y, error_width, error_height), width=2, border_radius=20)
+    pygame.draw.rect(window, (0, 0, 255), (error_x, error_y, error_width, error_height), width=2, border_radius=20)
 
-    text_surf = font.render("Error", True, RED)
+    text_surf = font.render("Notification", True, (0, 0, 255))
     text_rect = text_surf.get_rect(center=(error_x + error_width // 2, error_y + 40))
     window.blit(text_surf, text_rect)
 
@@ -86,7 +108,7 @@ def show_bubble_error(message, window):
         line_y += 30
 
     ok_button = pygame.Rect(error_x + error_width // 2 - 50, error_y + error_height - 60, 100, 40)
-    pygame.draw.rect(window, RED, ok_button)
+    pygame.draw.rect(window, (0, 0, 255), ok_button)
     ok_text = font.render("OK", True, WHITE)
     ok_text_rect = ok_text.get_rect(center=ok_button.center)
     window.blit(ok_text, ok_text_rect)
@@ -165,12 +187,8 @@ while gps_signal:
     # Draw the map
     window.blit(map_img, (0, 0))
     draw_road(car_pos, lines)
-    # if is_on_road(new_pos):
-    #     car_pos = new_pos
-    # else:
     car_pos = new_pos
-    # road_text = "not on road"
-    # draw_text(road_text, font, (238, 0, 99), window, 10, 40)
+
     # Rotate the car image
     rotated_car = pygame.transform.rotate(car_img, car_yaw)
     rect = rotated_car.get_rect(center=(car_pos))
@@ -179,18 +197,18 @@ while gps_signal:
     window.blit(rotated_car, rect.topleft)
     pygame.display.flip()
 
+path = csv_generator.calculate_distances_and_yaws(lines)
 # Load the points from CSV
-points = read_csv("files/points.csv")
+# points_of_turns = read_csv("detected_turns.csv")
 
 # Car properties
-car_pos = [points[0][0], points[0][1]]
-car_yaw = points[0][2]
+car_pos = [lines[0][0], lines[0][1]]
+# car_yaw = points_of_turns[0][2]
 
 # Main loop
 running = True
 clock = pygame.time.Clock()
-path = [(110, 0), (280, -90), (370, 0)]
-
+# path = [(110, 0), (280, -90), (370, 0)]
 while running:
     clock.tick(FPS)
 
@@ -201,7 +219,7 @@ while running:
     keys = pygame.key.get_pressed()
 
     # Calculate new position
-    new_pos = car_pos.copy()
+    new_pos = car_pos
     if keys[pygame.K_UP]:
         new_pos[0] += car_speed * pygame.math.Vector2(1, 0).rotate(-car_yaw).x
         new_pos[1] += car_speed * pygame.math.Vector2(1, 0).rotate(-car_yaw).y
@@ -236,6 +254,7 @@ while running:
         car_yaw += yaw_speed
     if keys[pygame.K_RIGHT]:
         car_yaw -= yaw_speed
+    car_yaw = car_yaw % 360
 
     # Clear the screen
     window.fill(WHITE)
@@ -248,38 +267,33 @@ while running:
     else:
         car_pos = new_pos
         road_text = "not on road"
-        draw_text(road_text, font, (238, 0, 99), window, 10, 40)
+        draw_text(road_text, font, (238, 0, 99), window, 70, 20)
     # Rotate the car image
     rotated_car = pygame.transform.rotate(car_img, car_yaw)
     rect = rotated_car.get_rect(center=(car_pos[0], car_pos[1]))
 
     # Draw the car
     window.blit(rotated_car, rect.topleft)
-
     if len(path) == 0:
         show_bubble_error("you've arrived", window)
         time.sleep(20)
     elif len(path) >= 2:
-        next_turn = f"turn {path[1][1]} in {path[0][0]} meters"
+        next_turn = f"drive now to {path[0][1]} turn {path[1][1]} in {int(path[0][0])} meters"
     else:
-        next_turn = f"keep straight and in {path[0][0]} meters you will arrive"
-
-    if car_yaw - range_yaw <= path[0][1] <= car_yaw + range_yaw:
-        path[0] = (int(path[0][0] - (0.1 * car_speed)), path[0][1])
+        next_turn = f"keep straight ({path[0][1]}) and in {path[0][0]} meters you will arrive"
+    if is_yaw_in_range(car_yaw, path[0][1]):
+        path[0] = (int(path[0][0] - (0.00001 * car_speed)), path[0][1])
     if path[0][0] == 0:
         print(path)
         path = path[1:]
     # Draw text
-    position_text = f"Position: ({car_pos[0]:.1f}, {car_pos[1]:.1f})"
-    yaw_text = f"Yaw: {car_yaw:.1f}, speed: {100 * car_speed:.1f}"
+    position_text = f"Position: ({int(car_pos[0])}, {car_pos[1]:.1f})"
+    yaw_text = f"Yaw: {int(car_yaw)}, speed: {100 * car_speed:.1f}"
     draw_text(position_text, font, (0, 0, 0), window, 10, 10)
     draw_text(yaw_text, font, (0, 0, 0), window, 10, 30)
-    draw_text(next_turn, font, (0, 0, 0), window, 10, 40)
+    draw_text(next_turn, font, (0, 0, 255), window, 10, 50)
 
     # Update the display
     pygame.display.flip()
-
-for i in range(1000):
-    show_bubble_error("Not on road!", window)
 
 pygame.quit()
