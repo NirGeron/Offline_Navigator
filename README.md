@@ -1,4 +1,13 @@
+
+
+
 # Offline Navigator
+<p align="center">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/AppleMaps_logo.svg/2048px-AppleMaps_logo.svg.png" alt="Logo" width="130" height="130" align="right">
+</p>
+<p align="center">
+  <img src="https://static.vecteezy.com/system/resources/previews/025/902/338/original/no-gps-icon-map-location-pin-isolate-not-available-sign-design-isolate-on-white-background-vector.jpg" alt="Logo" width="130" height="130" align="right">
+</p>
 
 Offline Navigator is a Python-based application designed to simulate and test navigation on a map using A BFS algorithm for pathfinding.
 The application uses Pygame for the graphical interface and Matplotlib for visualizing the paths on the map.
@@ -10,7 +19,7 @@ The application uses Pygame for the graphical interface and Matplotlib for visua
 - Visualize the path on the map.
 - Save the path with direction changes and followed directions to CSV files
 - Parsing the path direction CSV for offline navigator
-- 
+- calculate turns and distance by using car's offline system details
 
 ## Installation
 
