@@ -1,13 +1,16 @@
 # Offline Navigator
 
-Offline Navigator is a Python-based application designed to simulate and test navigation on a map using A* algorithm for pathfinding. The application uses Pygame for the graphical interface and Matplotlib for visualizing the paths on the map.
+Offline Navigator is a Python-based application designed to simulate and test navigation on a map using A BFS algorithm for pathfinding.
+The application uses Pygame for the graphical interface and Matplotlib for visualizing the paths on the map.
 
 ## Features
 
 - Load a black-and-white map image and convert it into a binary matrix.
 - Select start and end points on the map to find the shortest path using the A* algorithm.
 - Visualize the path on the map.
-- Save the path with direction changes and followed directions to CSV files.
+- Save the path with direction changes and followed directions to CSV files
+- Parsing the path direction CSV for offline navigator
+- 
 
 ## Installation
 
@@ -27,25 +30,18 @@ To use the Offline Navigator, follow these steps:
 ## Usage
 
 1. **Prepare your map image:**
-   - Ensure your map image is in black and white, where the walkable paths are white and obstacles are black.
-   - Save the map image in the `files` directory.
+   - open city_path_generator.py and put your map image you want to run.
+   - run via terminal "python city_path_generator.py"
+   - choose the path by clicking start point and destination
+   - ![image](https://github.com/NirGeron/Offline_Navigator/assets/75199660/e621ae66-4652-4304-a8e0-e87d20a80e11)
 
-2. **Run the main script:**
-   ```bash
-   python main.py
-   ```
-
-3. **Interact with the application:**
-   - A window will open displaying the map.
+2. **Interact with the application:**
+   - run ui.py
+   - A window will open displaying the map with your current location.
    - Click on the map to select the start and end points.
-   - The application will compute the shortest path using the A* algorithm and display it on the map.
+   - The application will compute the shortest path using the BFS algorithm and display it on the map.
+   - once you clicked on "p" button on your keyboard the server will down and you will start navigate offline
    - The directions of the path will be saved in `gps.csv` and `offline.csv`.
-
-## Files
-
-- **main.py**: The main script to run the application.
-- **files/map_avi.png**: The example map image used by the application.
-- **requirements.txt**: The list of required Python libraries.
 
 ## Functionality
 
@@ -83,7 +79,7 @@ Saves the count and direction of continuous movements to a CSV file.
 
 - Pygame for providing the graphical interface.
 - Matplotlib for visualizing the paths.
-- The A* algorithm for pathfinding.
+- The BFS algorithm for pathfinding.
 
 ---
 
